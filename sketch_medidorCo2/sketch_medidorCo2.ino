@@ -3,7 +3,10 @@
 #include <LiquidCrystal_I2C.h>
 #include <LiquidCrystal.h>
 #include <Keypad.h>
+#include <SPI.h>
+#include <SD.h>
 
+File archivo;
 const byte filas = 4;
 const byte columnas = 4;
 char keys[filas][columnas] = {
@@ -33,6 +36,12 @@ float Ro = 350631.96;
 
 void setup() {
   Serial.begin(9600);
+  Serial.print("Initializing SD card...");
+  if (!SD.begin(4)) {
+    Serial.println("initialization failed!");
+    while (1);
+  }
+  Serial.println("initialization done.");
   lcd.setBacklightPin(3 , POSITIVE);
   lcd.setBacklight(HIGH);
   
@@ -69,7 +78,7 @@ float CalcularRo(){
   }
 
 void Calibracion(){
-  ImprimirEnPantalla("");
+  ImprimirEnPantalla("                ");
   ImprimirEnPantalla("Calibrando... ");
   CalcularRo();
   ImprimirEnPantalla("Terminado!   ");
@@ -103,17 +112,51 @@ void ImprimirEnPantalla(String men){
       lcd.clear();
     }
 }
+void ObtenerYGuardar(){
+  
+  
+  for (int i = 0 ; i <= 120 ; i++){
+    float ppm =CalcularPPM_Co2();
+    
+    Serial.println(ppm);
+    
+    archivo = SD.open("datos.txt",FILE_WRITE);
+    archivo.print(String(i));
+    archivo.print(",");
+    archivo.println(String(int(ppm)));
+    archivo.close();
+    ImprimirEnPantalla("                ");
+    ImprimirEnPantalla(String(ppm)+" PPM CO2");
+    lcd.setCursor(0,1);
+    lcd.print("REC " + String(i) + " muestras");
+        
+    delay(1000);
+    lcd.print("                ");
+    
+    
+  }
+  lcd.setCursor(0,1);
+  lcd.print("                ");
+  
+  
+  
+  }
 void menu(){
   tecla = teclado.getKey();
   if(tecla){
     if (tecla == 'A'){
       Calibracion();    
     }
+    if (tecla == 'B'){
+      ObtenerYGuardar();    
+    }
   }
 }
+
 void obtenerMedidaCo2(){
     float ppm =CalcularPPM_Co2();
     Serial.println(ppm);
+    ImprimirEnPantalla("                ");
     ImprimirEnPantalla(String(ppm)+" PPM CO2");
     
     delay(1000);
