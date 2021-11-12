@@ -27,11 +27,11 @@ LiquidCrystal_I2C lcd (0x27, 2, 1, 0, 4, 5, 6, 7);
 int cantidadMov = 0;
 int stringStart = 0 ;
 int stringStop = 16;
-int s_Mq135;
+
 int contador = 300;
 const float constanteA = 5.5973021420;
 const  float constanteB = -0.365425824;
-float Ro = 350631.96;
+float Ro;
 
 
 void setup() {
@@ -44,7 +44,7 @@ void setup() {
   Serial.println("initialization done.");
   lcd.setBacklightPin(3 , POSITIVE);
   lcd.setBacklight(HIGH);
-  
+  Ro=88974.23;
   lcd.begin(16,2);
   lcd.clear();
 
@@ -72,7 +72,7 @@ float CalcularRs(){
   }
 float CalcularRo(){
   float Rs = CalcularRs();
-  double constante = pow(416.96 , constanteB);
+  float constante = pow(416.96 , constanteB);
   Ro = Rs/(constanteA * constante);
     
   }
@@ -81,6 +81,7 @@ void Calibracion(){
   ImprimirEnPantalla("                ");
   ImprimirEnPantalla("Calibrando... ");
   CalcularRo();
+  
   ImprimirEnPantalla("Terminado!   ");
   delay(2000);
 
@@ -114,27 +115,29 @@ void ImprimirEnPantalla(String men){
 }
 void ObtenerYGuardar(){
   
-  
+  SD.remove("datos.txt");
+  archivo = SD.open("datos.txt",FILE_WRITE);
   for (int i = 0 ; i <= 120 ; i++){
-    float ppm =CalcularPPM_Co2();
+    float ppm =obtenerMedidaCo2();
     
     Serial.println(ppm);
     
-    archivo = SD.open("datos.txt",FILE_WRITE);
+    
     archivo.print(String(i));
     archivo.print(",");
     archivo.println(String(int(ppm)));
-    archivo.close();
+    
     ImprimirEnPantalla("                ");
-    ImprimirEnPantalla(String(ppm)+" PPM CO2");
+    
     lcd.setCursor(0,1);
     lcd.print("REC " + String(i) + " muestras");
         
-    delay(1000);
+    
     lcd.print("                ");
     
     
   }
+  archivo.close();
   lcd.setCursor(0,1);
   lcd.print("                ");
   
@@ -153,13 +156,14 @@ void menu(){
   }
 }
 
-void obtenerMedidaCo2(){
+float obtenerMedidaCo2(){
     float ppm =CalcularPPM_Co2();
     Serial.println(ppm);
     ImprimirEnPantalla("                ");
     ImprimirEnPantalla(String(ppm)+" PPM CO2");
     
     delay(1000);
+    return ppm;
   }
    
 void loop() {
